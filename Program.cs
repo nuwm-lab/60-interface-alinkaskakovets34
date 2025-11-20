@@ -1,104 +1,115 @@
 using System;
 
-// Клас дробово-лінійної функції (a1*x + a0)/(b1*x + b0)
-class FractionLinear
+// ===== ІНТЕРФЕЙСИ =====
+interface IPrintable
 {
-    protected double a1, a0, b1, b0;
+    void PrintCoefficients();
+}
 
-    public void SetCoefficients(double a1, double a0, double b1, double b0)
-    {
-        this.a1 = a1;
-        this.a0 = a0;
-        this.b1 = b1;
-        this.b0 = b0;
-    }
+interface IEvaluable
+{
+    double Evaluate(double x);
+}
 
-    public virtual void Display()
-    {
-        Console.WriteLine($"f(x) = ({a1}x + {a0}) / ({b1}x + {b0})");
-    }
+// ===== АБСТРАКТНИЙ КЛАС =====
+abstract class RationalFunction : IEvaluable, IPrintable
+{
+    public abstract void SetCoefficients(params double[] c);
+    public abstract double Evaluate(double x);
+    public abstract void PrintCoefficients();
 
-    public virtual double Value(double x)
+    protected void CheckDenominator(double val)
     {
-        return (a1 * x + a0) / (b1 * x + b0);
+        if (Math.Abs(val) < 1e-12)
+            throw new DivideByZeroException("Помилка: знаменник = 0 (вертикальна асимптота)!");
     }
 }
 
-
-// Похідний клас дробової функції (a2*x^2 + a1*x + a0)/(b2*x^2 + b1*x + b0)
-class FractionQuadratic : FractionLinear
+// ===== ЛІНІЙНА ДРОБОВА ФУНКЦІЯ =====
+class FractionLinear : RationalFunction
 {
-    private double a2, b2;
+    private double A1, A0, B1, B0;
 
-    public void SetCoefficients(double a2, double a1, double a0,
-                                double b2, double b1, double b0)
+    public override void SetCoefficients(params double[] c)
     {
-        this.a2 = a2;
-        this.a1 = a1;
-        this.a0 = a0;
-        this.b2 = b2;
-        this.b1 = b1;
-        this.b0 = b0;
+        if (c.Length != 4) throw new ArgumentException("Потрібно 4 коефіцієнти!");
+        (A1, A0, B1, B0) = (c[0], c[1], c[2], c[3]);
     }
 
-    public override void Display()
+    public override void PrintCoefficients()
     {
-        Console.WriteLine(
-            $"g(x) = ({a2}x² + {a1}x + {a0}) / ({b2}x² + {b1}x + {b0})");
+        Console.WriteLine($"f(x) = ({A1}x + {A0}) / ({B1}x + {B0})");
     }
 
-    public override double Value(double x)
+    public override double Evaluate(double x)
     {
-        return (a2 * x * x + a1 * x + a0) /
-               (b2 * x * x + b1 * x + b0);
+        double denom = B1 * x + B0;
+        CheckDenominator(denom);
+        return (A1 * x + A0) / denom;
     }
 }
 
+// ===== КВАДРАТИЧНА ДРОБОВА ФУНКЦІЯ =====
+class FractionQuadratic : RationalFunction
+{
+    private double A2, A1, A0, B2, B1, B0;
 
-// Демонстрація
+    public override void SetCoefficients(params double[] c)
+    {
+        if (c.Length != 6) throw new ArgumentException("Потрібно 6 коефіцієнтів!");
+        (A2, A1, A0, B2, B1, B0) = (c[0], c[1], c[2], c[3], c[4], c[5]);
+    }
+
+    public override void PrintCoefficients()
+    {
+        Console.WriteLine($"g(x) = ({A2}x² + {A1}x + {A0}) / ({B2}x² + {B1}x + {B0})");
+    }
+
+    public override double Evaluate(double x)
+    {
+        double denom = B2 * x * x + B1 * x + B0;
+        CheckDenominator(denom);
+        return (A2 * x * x + A1 * x + A0) / denom;
+    }
+}
+
+// ===== MAIN =====
 class Program
 {
     static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        // 1) Об’єкт лінійної дробової функції
-        FractionLinear f = new FractionLinear();
-        f.SetCoefficients(2, 3, 4, 5);  // (2x+3)/(4x+5)
+        IEvaluable func; // Поліморфізм ✔
+        Console.WriteLine("Оберіть тип функції: 1 - Лінійна, 2 - Квадратична");
 
-        Console.WriteLine("=== Лінійна дробова функція ===");
-        f.Display();
-        Console.WriteLine($"f(1) = {f.Value(1):F4}");
+        string? choice = Console.ReadLine();
+        func = choice == "1" ? new FractionLinear() : new FractionQuadratic();
 
-        // 2) Об’єкт дробової квадратичної функції
-        FractionQuadratic g = new FractionQuadratic();
-        g.SetCoefficients(1, 2, 3, 1, 1, 2); // (x²+2x+3)/(x²+x+2)
+        try
+        {
+            if (func is FractionLinear fl)
+            {
+                fl.SetCoefficients(2, 3, 4, 5);
+                fl.PrintCoefficients();
+            }
+            else if (func is FractionQuadratic fq)
+            {
+                fq.SetCoefficients(1, 2, 3, 1, 1, 2);
+                fq.PrintCoefficients();
+            }
 
-        Console.WriteLine("\n=== Квадратична дробова функція ===");
-        g.Display();
-        Console.WriteLine($"g(1) = {g.Value(1):F4}");
+            Console.Write("\nВведіть x0 = ");
+            if (double.TryParse(Console.ReadLine(), out double x))
+            {
+                Console.WriteLine($"Результат: {func.Evaluate(x):F4}");
+            }
+            else Console.WriteLine("Некоректне значення x!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 }
 
-        Shape obj;
-
-
-        Console.WriteLine("Choose object: 0 - Circle, 1 - Sphere");
-        int choice = Convert.ToInt32(Console.ReadLine());
-
-
-        if (choice == 0)
-        {
-            obj = new Circle(0, 0, 5);
-        }
-        else
-        {
-            obj = new Sphere(0, 0, 10, 5);
-        }
-
-
-        Console.WriteLine("\n--- Object Information ---");
-        obj.Display();
-        Console.WriteLine($"Area: {obj.Area():F2}");
-    }
-}
