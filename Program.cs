@@ -1,110 +1,84 @@
 using System;
 
-
-// Абстрактний клас — спільний для всіх фігур
-abstract class Shape
+// Клас дробово-лінійної функції (a1*x + a0)/(b1*x + b0)
+class FractionLinear
 {
-    protected int x0, y0, r;
+    protected double a1, a0, b1, b0;
 
-
-    public Shape(int x, int y, int radius)
+    public void SetCoefficients(double a1, double a0, double b1, double b0)
     {
-        x0 = x;
-        y0 = y;
-        r = radius;
-        Console.WriteLine("Shape constructor called");
+        this.a1 = a1;
+        this.a0 = a0;
+        this.b1 = b1;
+        this.b0 = b0;
     }
-
-
-    ~Shape()
-    {
-        Console.WriteLine("Shape destructor called");
-    }
-
 
     public virtual void Display()
     {
-        Console.WriteLine($"Center: ({x0}, {y0}), Radius: {r}");
+        Console.WriteLine($"f(x) = ({a1}x + {a0}) / ({b1}x + {b0})");
     }
 
-
-    // Абстрактний метод — обов’язково переозначати
-    public abstract double Area();
+    public virtual double Value(double x)
+    {
+        return (a1 * x + a0) / (b1 * x + b0);
+    }
 }
 
-//  Клас Circle (коло)
-class Circle : Shape
+
+// Похідний клас дробової функції (a2*x^2 + a1*x + a0)/(b2*x^2 + b1*x + b0)
+class FractionQuadratic : FractionLinear
 {
-    public Circle(int x, int y, int radius)
-        : base(x, y, radius)
+    private double a2, b2;
+
+    public void SetCoefficients(double a2, double a1, double a0,
+                                double b2, double b1, double b0)
     {
-        Console.WriteLine("Circle constructor called");
+        this.a2 = a2;
+        this.a1 = a1;
+        this.a0 = a0;
+        this.b2 = b2;
+        this.b1 = b1;
+        this.b0 = b0;
     }
-
-
-    ~Circle()
-    {
-        Console.WriteLine("Circle destructor called");
-    }
-
-
-    public override double Area()
-    {
-        return Math.PI * r * r;
-    }
-
-
-    public double Length()
-    {
-        return 2 * Math.PI * r;
-    }
-
 
     public override void Display()
     {
-        Console.WriteLine($"Circle Center: ({x0}, {y0}), Radius: {r}");
+        Console.WriteLine(
+            $"g(x) = ({a2}x² + {a1}x + {a0}) / ({b2}x² + {b1}x + {b0})");
+    }
+
+    public override double Value(double x)
+    {
+        return (a2 * x * x + a1 * x + a0) /
+               (b2 * x * x + b1 * x + b0);
     }
 }
 
-//  Клас Sphere (сфера)
-class Sphere : Shape
-{
-    protected int z0;
 
-
-    public Sphere(int x, int y, int z, int radius)
-        : base(x, y, radius)
-    {
-        z0 = z;
-        Console.WriteLine("Sphere constructor called");
-    }
-
-
-    ~Sphere()
-    {
-        Console.WriteLine("Sphere destructor called");
-    }
-
-
-    public override double Area()
-    {
-        return 4 * Math.PI * r * r;
-    }
-
-
-    public override void Display()
-    {
-        Console.WriteLine($"Sphere Center: ({x0}, {y0}, {z0}), Radius: {r}");
-    }
-}
-
-//  Демонстрація роботи
+// Демонстрація
 class Program
 {
     static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+        // 1) Об’єкт лінійної дробової функції
+        FractionLinear f = new FractionLinear();
+        f.SetCoefficients(2, 3, 4, 5);  // (2x+3)/(4x+5)
+
+        Console.WriteLine("=== Лінійна дробова функція ===");
+        f.Display();
+        Console.WriteLine($"f(1) = {f.Value(1):F4}");
+
+        // 2) Об’єкт дробової квадратичної функції
+        FractionQuadratic g = new FractionQuadratic();
+        g.SetCoefficients(1, 2, 3, 1, 1, 2); // (x²+2x+3)/(x²+x+2)
+
+        Console.WriteLine("\n=== Квадратична дробова функція ===");
+        g.Display();
+        Console.WriteLine($"g(1) = {g.Value(1):F4}");
+    }
+}
 
         Shape obj;
 
