@@ -1,129 +1,128 @@
 using System;
 
-namespace LabWork
+// =================== АБСТРАКТНИЙ БАЗОВИЙ КЛАС ===================
+
+abstract class ShapeND
 {
-    /// <summary>
-    /// Базовий абстрактний клас для дробових функцій.
-    /// Містить методи обчислення та виведення.
-    /// </summary>
-    public abstract class RationalFunction : IEvaluable, IPrintable
+    protected double[] coeff; // масив коефіцієнтів
+
+    public ShapeND(int size)
     {
-        public abstract void SetCoefficients(params double[] c);
-        public abstract double Evaluate(double x);
-        public abstract void PrintCoefficients();
-        public abstract override string ToString();
-
-        /// <summary>
-        /// Перевірка знаменника перед діленням.
-        /// </summary>
-        protected void CheckDenominator(double val)
-        {
-            if (Math.Abs(val) < 1e-12)
-                throw new DivideByZeroException("Знаменник = 0. Вертикальна асимптота!");
-        }
-
-        ~RationalFunction()
-        {
-            Console.WriteLine("Finalize RationalFunction (демонстрація)");
-        }
+        coeff = new double[size];
+        Console.WriteLine("Викликано конструктор ShapeND");
     }
 
-    /// <summary>Інтерфейс обчислення функції.</summary>
-    public interface IEvaluable
+    // Деструктор
+    ~ShapeND()
     {
-        double Evaluate(double x);
+        Console.WriteLine("Викликано деструктор ShapeND");
     }
 
-    /// <summary>Інтерфейс виведення коефіцієнтів.</summary>
-    public interface IPrintable
+    // Віртуальний метод для задання коефіцієнтів
+    public virtual void Set(params double[] values)
     {
-        void PrintCoefficients();
+        for (int i = 0; i < coeff.Length && i < values.Length; i++)
+            coeff[i] = values[i];
     }
 
-    /// <summary>Дробово-лінійна функція (a1x + a0) / (b1x + b0)</summary>
-    public class FractionLinear : RationalFunction
+    // Абстрактні методи — обов'язкові у похідних класах
+    public abstract void Print();
+
+    public abstract bool Contains(params double[] point);
+}
+
+
+// =================== КЛАС Line (пряма у 2D) ===================
+
+class Line : ShapeND
+{
+    public Line() : base(3)
     {
-        private double _a1, _a0, _b1, _b0;
-
-        public FractionLinear(double a1, double a0, double b1, double b0)
-        {
-            SetCoefficients(a1, a0, b1, b0);
-        }
-
-        public override void SetCoefficients(params double[] c)
-        {
-            if (c.Length != 4) throw new ArgumentException("Очікується 4 коефіцієнти.");
-            (_a1, _a0, _b1, _b0) = (c[0], c[1], c[2], c[3]);
-        }
-
-        public override double Evaluate(double x)
-        {
-            double denom = _b1 * x + _b0;
-            CheckDenominator(denom);
-            return (_a1 * x + _a0) / denom;
-        }
-
-        public override void PrintCoefficients() => Console.WriteLine(ToString());
-        public override string ToString() => $"f(x) = ({_a1}x + {_a0}) / ({_b1}x + {_b0})";
+        Console.WriteLine("Викликано конструктор Line");
     }
 
-    /// <summary>Дробова квадратична функція (a2x² + a1x + a0) / (b2x² + b1x + b0)</summary>
-    public class FractionQuadratic : RationalFunction
+    ~Line()
     {
-        private double _a2, _a1, _a0, _b2, _b1, _b0;
-
-        public FractionQuadratic(double a2, double a1, double a0, double b2, double b1, double b0)
-        {
-            SetCoefficients(a2, a1, a0, b2, b1, b0);
-        }
-
-        public override void SetCoefficients(params double[] c)
-        {
-            if (c.Length != 6) throw new ArgumentException("Очікується 6 коефіцієнтів.");
-            (_a2, _a1, _a0, _b2, _b1, _b0) = (c[0], c[1], c[2], c[3], c[4], c[5]);
-        }
-
-        public override double Evaluate(double x)
-        {
-            double denom = _b2 * x * x + _b1 * x + _b0;
-            CheckDenominator(denom);
-            return (_a2 * x * x + _a1 * x + _a0) / denom;
-        }
-
-        public override void PrintCoefficients() => Console.WriteLine(ToString());
-        public override string ToString() => $"g(x) = ({_a2}x² + {_a1}x + {_a0}) / ({_b2}x² + {_b1}x + {_b0})";
+        Console.WriteLine("Викликано деструктор Line");
     }
 
-    // ---- Головна програма ----
-    public class Program
+    public override void Print()
     {
-        public static void Main()
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.WriteLine($"Пряма: {coeff[1]}*x + {coeff[2]}*y + {coeff[0]} = 0");
+    }
 
-            IEvaluable func; // поліморфізм
-            Console.WriteLine("Оберіть функцію: 1 - лінійна, 2 - квадратична");
-
-            func = Console.ReadLine() == "1"
-                ? new FractionLinear(2, 3, 4, 5)
-                : new FractionQuadratic(1, 2, 3, 1, 1, 2);
-
-            Console.Write("Введіть x: ");
-            if (!double.TryParse(Console.ReadLine(), out double x))
-            {
-                Console.WriteLine("Помилка вводу.");
-                return;
-            }
-
-            try
-            {
-                Console.WriteLine($"Результат: {func.Evaluate(x):F4}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+    public override bool Contains(params double[] p)
+    {
+        if (p.Length < 2) return false;
+        double x = p[0], y = p[1];
+        return Math.Abs(coeff[1] * x + coeff[2] * y + coeff[0]) < 1e-9;
     }
 }
 
+
+// =================== КЛАС Hyperplane (гіперплощина у 4D) ===================
+
+class Hyperplane : ShapeND
+{
+    public Hyperplane() : base(5)
+    {
+        Console.WriteLine("Викликано конструктор Hyperplane");
+    }
+
+    ~Hyperplane()
+    {
+        Console.WriteLine("Викликано деструктор Hyperplane");
+    }
+
+    public override void Print()
+    {
+        Console.WriteLine($"Гіперплощина: {coeff[4]}*x4 + {coeff[3]}*x3 + {coeff[2]}*x2 + {coeff[1]}*x1 + {coeff[0]} = 0");
+    }
+
+    public override bool Contains(params double[] p)
+    {
+        if (p.Length < 4) return false;
+        return Math.Abs(coeff[4] * p[3] + coeff[3] * p[2] + coeff[2] * p[1] + coeff[1] * p[0] + coeff[0]) < 1e-9;
+    }
+}
+
+
+// =================== ГОЛОВНА ПРОГРАМА ===================
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Виберіть режим:");
+        Console.WriteLine("1 — працювати з прямою Line");
+        Console.WriteLine("2 — працювати з гіперплощиною Hyperplane");
+
+        char choose = Console.ReadKey().KeyChar;
+        Console.WriteLine();
+
+        ShapeND obj; // посилання на базовий клас
+
+        if (choose == '1')
+        {
+            obj = new Line();
+            obj.Set(3, 2, -1);  // a0, a1, a2
+            Console.WriteLine("Створено об'єкт типу Line\n");
+        }
+        else
+        {
+            obj = new Hyperplane();
+            obj.Set(1, 2, 3, 4, 5);  // a0..a4
+            Console.WriteLine("Створено об'єкт типу Hyperplane\n");
+        }
+
+        // Поліморфний виклик віртуальних методів
+        Console.WriteLine("=== Вивід коефіцієнтів ===");
+        obj.Print();
+
+        Console.WriteLine("\nПеревіряємо точку (1,1,1,1):");
+        bool inside = obj.Contains(1, 1, 1, 1);
+        Console.WriteLine(inside ? "Точка належить." : "Точка НЕ належить.");
+
+        Console.WriteLine("\nКінець роботи програми.\n");
+    }
+}
